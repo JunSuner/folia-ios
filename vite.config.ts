@@ -134,6 +134,9 @@ function devLyricProxyPlugin() {
 }
 
 export default async function viteConfig(_config: ConfigEnv): Promise<UserConfig> {
+  // iOS 壳（Capacitor）构建：页面从 capacitor:// 本地加载，WKWebView 不支持自定义协议下的 Service Worker，关掉 PWA。
+  const isCapacitorBuild = process.env.CAPACITOR === 'true';
+
   let commitHash = '';
   if (process.env.VERCEL_GIT_COMMIT_SHA) {
     commitHash = process.env.VERCEL_GIT_COMMIT_SHA.substring(0, 7);
@@ -283,6 +286,7 @@ export default async function viteConfig(_config: ConfigEnv): Promise<UserConfig
       nebbiaStrokesPlugin(),
       react(),
       VitePWA({
+        disable: isCapacitorBuild,
         registerType: 'autoUpdate',
         includeAssets: ['icon.svg'],
         devOptions: {

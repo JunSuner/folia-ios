@@ -78,7 +78,9 @@
     "contributors:generate": "npx all-contributors-cli generate",
     "models:fetch": "node build/fetchModels.mjs",
     "steam-audio:fetch": "node build/fetchSteamAudio.mjs",
-    "manual:ai-probe": "node test/manual/ai_probe.mjs"
+    "manual:ai-probe": "node test/manual/ai_probe.mjs",
+    "build:ios": "cross-env CAPACITOR=true vite build && cap sync ios",
+    "open:ios": "cap open ios"
   },
   "build": {
     "extends": "file:build/bundledSources.mjs",
@@ -270,6 +272,8 @@
     }
   },
   "dependencies": {
+    "@capacitor/core": "8.6.2",
+    "@capacitor/ios": "8.6.2",
     "@google/genai": "^2.24.0",
     "@neteasecloudmusicapienhanced/api": "4.41.1",
     "@xhayper/discord-rpc": "^1.5.1",
@@ -292,6 +296,7 @@
   },
   "devDependencies": {
     "@applemusic-like-lyrics/ttml": "^1.0.1",
+    "@capacitor/cli": "8.6.2",
     "@chenglou/pretext": "^0.0.9",
     "@electron/asar": "3.4.1",
     "@emnapi/core": "1.11.3",
