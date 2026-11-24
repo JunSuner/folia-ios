@@ -79,7 +79,7 @@
     "models:fetch": "node build/fetchModels.mjs",
     "steam-audio:fetch": "node build/fetchSteamAudio.mjs",
     "manual:ai-probe": "node test/manual/ai_probe.mjs",
-    "build:ios": "cross-env CAPACITOR=true vite build && cap sync ios",
+    "build:ios": "cross-env CAPACITOR=true vite build --mode capacitor && cap sync ios",
     "open:ios": "cap open ios"
   },
   "build": {
