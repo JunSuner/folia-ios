@@ -113,3 +113,5 @@ public/nebbia-strokes.json
 .coven/
 # ignore workbuddy
 .workbuddy/
+# iOS 壳的本地后端地址（每人自己的网易云 API）
+.env.capacitor
