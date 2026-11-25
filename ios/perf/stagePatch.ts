@@ -1,5 +1,5 @@
 const early: string[] = [];
-const keepEarly = (line: string) => { if (early.length < 40) early.push(line); };
+const keepEarly = (line: string) => { if (early.length < 80) early.push(line); console.info(`[ios-perf] ${line}`); };
 (window as unknown as { __iosPerfEarly: string[] }).__iosPerfEarly = early;
 // ios/perf/stagePatch.ts
 // 在测量页之前加载：Capacitor 的本地文件服务给 .wav 的 MIME 类型不对，WebKit 会把 blob 当成 WebM 解码失败，
@@ -31,15 +31,54 @@ window.addEventListener('unhandledrejection', e => keep('rejection', [e.reason])
 const OriginalAudio = window.Audio;
 window.Audio = function (src?: string) {
     const audio = new OriginalAudio(src);
-    for (const type of ['loadstart', 'loadedmetadata', 'canplay', 'canplaythrough', 'error', 'suspend', 'stalled', 'play', 'playing']) {
+    // 预加载期间先拦住 canplaythrough，免得测量页提前开始、又被预加载的 pause/归零打断。
+    let priming = false;
+    audio.addEventListener("canplaythrough", e => { if (priming && e.isTrusted) e.stopImmediatePropagation(); });
+    for (const type of ['loadstart', 'loadedmetadata', 'canplay', 'canplaythrough', 'error', 'suspend', 'stalled', 'play', 'playing', 'pause', 'seeking', 'seeked', 'waiting']) {
         audio.addEventListener(type, () => keepEarly(`audio ${type} ready=${audio.readyState} net=${audio.networkState} err=${audio.error?.code ?? ''}`));
     }
-    // iOS 在播放前只读到元数据就停（suspend），canplaythrough 不会来；测试曲是内存里的 blob，元数据到了就能播。
-    audio.addEventListener('loadedmetadata', () => {
-        if (audio.readyState < 4) {
-            keepEarly('synthetic canplaythrough');
-            audio.dispatchEvent(new Event('canplaythrough'));
-        }
+    // iOS 在播放前只读到元数据就停（suspend），canplaythrough 不会来；只有元数据时跳进度，真机上这次 seek 会一直挂着，
+    // play() 永远不返回。所以元数据到了先静音播一下再暂停，让 iOS 把数据真正读进来，真的 canplaythrough 才会来。
+    audio.addEventListener("loadedmetadata", () => {
+        if (audio.readyState >= 4) return;
+        keepEarly("prime: muted play");
+        priming = true;
+        audio.muted = true;
+        const release = (note: string) => { audio.muted = false; priming = false; keepEarly(note); audio.dispatchEvent(new Event("canplaythrough")); };
+        audio.play().then(() => { audio.pause(); audio.currentTime = 0; release(`prime done ready=${audio.readyState}`); },
+            (e: Error) => release(`prime failed ${e?.name}`));
     }, { once: true });
     return audio;
 } as unknown as typeof Audio;
+
+// 真机上"开始播放"会卡住：记录 AudioContext.resume() 和 audio.play() 的进展，同时打到 console，
+// 用 devicectl 的 --console 就能在 Mac 上直接看到，不依赖收集器。
+const say = keepEarly;
+say(`audioSession=${(navigator as unknown as { audioSession?: { type: string } }).audioSession?.type ?? 'n/a'}`);
+const OriginalContext = window.AudioContext;
+window.AudioContext = class extends OriginalContext {
+    constructor(options?: AudioContextOptions) {
+        super(options);
+        say(`ctx new state=${this.state} rate=${this.sampleRate}`);
+        this.addEventListener('statechange', () => say(`ctx state -> ${this.state}`));
+    }
+} as typeof AudioContext;
+const watch = <T>(what: string, promise: Promise<T>, describe: () => string, onStall?: () => void) => {
+    const t0 = performance.now();
+    const ms = () => Math.round(performance.now() - t0);
+    say(`${what} start ${describe()}`);
+    const timer = setInterval(() => { say(`${what} pending ${ms()}ms ${describe()}`); onStall?.(); }, 3000);
+    promise.then(() => say(`${what} ok ${ms()}ms ${describe()}`), (e: Error) => say(`${what} err ${ms()}ms ${e?.name}: ${e?.message} ${describe()}`))
+        .finally(() => clearInterval(timer));
+    return promise;
+};
+const originalResume = AudioContext.prototype.resume;
+AudioContext.prototype.resume = function (this: AudioContext) {
+    return watch('ctx.resume', originalResume.call(this), () => `state=${this.state}`);
+};
+const originalPlay = HTMLMediaElement.prototype.play;
+HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
+    return watch('audio.play', originalPlay.call(this), () => `ready=${this.readyState} net=${this.networkState} t=${this.currentTime.toFixed(2)} paused=${this.paused} seeking=${this.seeking}`,
+        // 保险：seek 挂住超过 3 秒就重新跳一次。
+        () => { if (this.seeking) { say("seek stuck, kick"); this.currentTime = this.currentTime; } });
+};

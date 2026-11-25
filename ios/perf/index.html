@@ -6,7 +6,7 @@
     <title>Folia 性能测试</title>
     <style>
       html, body { margin: 0; background: #09090b; color: #e4e4e7; font: 15px/1.5 -apple-system, system-ui, sans-serif; }
-      main { padding: calc(env(safe-area-inset-top) + 24px) 20px 40px; }
+      main { padding: calc(env(safe-area-inset-top) + 24px) calc(env(safe-area-inset-right) + 20px) 40px calc(env(safe-area-inset-left) + 20px); }
       h1 { font-size: 22px; margin: 0 0 8px; }
       p { color: #a1a1aa; margin: 0 0 16px; }
       button { font: inherit; font-weight: 600; padding: 12px 20px; border-radius: 12px; border: 0; background: #fafafa; color: #09090b; }
@@ -19,7 +19,7 @@
   <body>
     <main>
       <h1>Folia 性能测试</h1>
-      <p id="status">逐个播放 18 种歌词样式，每种测 2 段 8 秒。测试前请把"自动锁定"设为"永不"，连着电源平放，测完前别切出 App。</p>
+      <p id="status">逐个播放 18 种歌词样式，每种测 2 段 8 秒，大约 10 分钟。横屏、竖屏分开测：先按你想测的方向拿好手机（测横屏要先关掉"竖排方向锁定"），中途别转。测试前把"自动锁定"设为"永不"，连着电源，测完前别切出 App。</p>
       <button id="start">开始测试</button>
       <table id="results" hidden><thead><tr><th>样式</th><th>帧率</th><th>p95 帧间隔</th><th>掉帧</th><th>最长卡顿</th></tr></thead><tbody></tbody></table>
     </main>

@@ -1,4 +1,4 @@
-import { RUN_STYLES as STYLES, WINDOW, loadState, report, saveState, stageUrl, summarize, type StyleResult } from './perfPlan';
+import { RUN_STYLES as STYLES, WINDOW, loadState, orientation, report, saveState, stageUrl, summarize, viewport, type StyleResult } from './perfPlan';
 
 // ios/perf/stageDriver.ts
 // 跑在测量页里：等 dev/perf/stage.tsx 准备好，播放测试曲的测量段并记录帧间隔，存结果后跳到下一个样式。
@@ -39,6 +39,8 @@ const run = async () => {
     try {
         const api = await waitForApi();
         await withTimeout(api.ready, 60000, '样式加载');
+        result.orientation = orientation();
+        result.viewport = viewport();
         for (let w = 0; w < WINDOW.windows; w++) {
             const lead = w === 0 ? WINDOW.firstWarmSeconds : WINDOW.preRollSeconds;
             await withTimeout(api.playFrom(WINDOW.startSeconds - lead), 15000, '开始播放');
@@ -50,6 +52,7 @@ const run = async () => {
         }
         api.pause();
         result.info = api.info();
+        if (orientation() !== result.orientation || result.orientation !== state.orientation) result.rotated = true;
     } catch (error) {
         result.error = `${(error as Error).message}${pageError ? ` / 页面错误: ${pageError}` : ''}`;
         (result as StyleResult & { log?: string[] }).log = [...((window as unknown as { __iosPerfEarly?: string[] }).__iosPerfEarly ?? []), ...((window as unknown as { __iosPerfLog?: string[] }).__iosPerfLog ?? [])];
