@@ -57,6 +57,13 @@ const run = async () => {
         result.error = `${(error as Error).message}${pageError ? ` / 页面错误: ${pageError}` : ''}`;
         (result as StyleResult & { log?: string[] }).log = [...((window as unknown as { __iosPerfEarly?: string[] }).__iosPerfEarly ?? []), ...((window as unknown as { __iosPerfLog?: string[] }).__iosPerfLog ?? [])];
     }
+    if (result.error && state.retriedIndex !== state.index) {
+        await report('result', { runId: state.runId, index: state.index, retry: true, ...result });
+        state.retriedIndex = state.index;
+        saveState(state);
+        window.location.replace(stageUrl(state.index));
+        return;
+    }
     await report('result', { runId: state.runId, index: state.index, ...result });
     delete result.gaps;
     state.results.push(result);

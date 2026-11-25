@@ -69,6 +69,8 @@ export interface RunState {
     runId: string;
     orientation: Orientation;
     index: number;
+    /** 已经重试过的样式序号：失败一次就重新加载这个样式再试一次（来电、别的 App 抢了音频等）。 */
+    retriedIndex?: number;
     results: StyleResult[];
 }
 
