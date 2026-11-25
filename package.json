@@ -79,7 +79,7 @@
     "models:fetch": "node build/fetchModels.mjs",
     "steam-audio:fetch": "node build/fetchSteamAudio.mjs",
     "manual:ai-probe": "node test/manual/ai_probe.mjs",
-    "build:ios": "cross-env CAPACITOR=true vite build --mode capacitor && cap sync ios",
+    "build:ios": "cross-env CAPACITOR=true vite build --mode capacitor && vite build -c ios/netease-local/vite.config.ts && cap sync ios",
     "open:ios": "cap open ios"
   },
   "build": {
@@ -301,6 +301,9 @@
     "@electron/asar": "3.4.1",
     "@emnapi/core": "1.11.3",
     "@emnapi/runtime": "1.11.3",
+    "@noble/ciphers": "2.4.0",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
     "@paper-design/shaders-react": "^0.0.80",
     "@playwright/test": "^1.63.0",
     "@react-three/drei": "^10.7.8",

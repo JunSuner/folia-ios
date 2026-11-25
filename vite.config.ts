@@ -278,6 +278,15 @@ export default async function viteConfig(_config: ConfigEnv): Promise<UserConfig
       },
     },
     plugins: [
+      // iOS（Capacitor）构建：页面最前面加载手机内置网易云服务的拦截脚本（ios/netease-local/bootstrap.js，
+      // 由 ios/netease-local/vite.config.ts 构建到 dist/netease-local/，npm run build:ios 里在这一步之后）。
+      isCapacitorBuild && {
+        name: 'folia-ios-netease-local',
+        transformIndexHtml: {
+          order: 'post' as const,
+          handler: () => [{ tag: 'script', attrs: { src: '/netease-local/bootstrap.js' }, injectTo: 'head-prepend' as const }],
+        },
+      },
       devLyricProxyPlugin(),
       commandPinyinPlugin(),
       traditionalLocalePlugin(),
