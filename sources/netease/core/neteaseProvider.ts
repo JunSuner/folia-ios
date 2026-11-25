@@ -29,6 +29,7 @@ import { createNeteaseExplore } from './neteaseExplore';
 import { neteaseRaw } from './neteaseRaw';
 import { neteaseCovers } from './neteaseCovers';
 import { neteaseFmCatalog } from './neteaseFmCatalog';
+import { createNeteaseNativePlayback, hasNeteaseNativePlayer } from './neteaseNativePlayback';
 import { canRunNeteaseSelfCheck, runNeteaseSelfCheck } from './neteaseSelfCheck';
 
 // sources/netease/core/neteaseProvider.ts
@@ -481,12 +482,39 @@ export const createNeteaseSource = (): FoliumSourceDef => {
         return { ids: response.ids.map((id: unknown) => String(id)), whole: true };
     };
 
+    // 一首歌在某个音质的播放地址：playback.audio@1 和 iOS 的原生播放器共用。
+    const readAudioSource = async (song: FoliumSourceSong, quality: FoliumSourceAudioQuality) => {
+        const response = await neteaseApi.getSongUrl(toNeteaseId(song.id), mapQuality(quality));
+        if (isRefusedNeteaseAnswer(response)) throw neteaseAnswerError(response, 'the song URL');
+        const raw = response?.data?.[0];
+        const rawUrl = raw?.url;
+        if (!rawUrl) throw neteaseNoUrlError(raw?.code, raw?.fee);
+        // 这个账号只能听一段试听（会员歌曲）：网易云给的是那一段的地址，freeTrialInfo 里是它在整首里的起止。
+        // 地址照给，标成试听：播放照放并提示，缓存不收它。
+        // 只认一个对象。上游的两条解锁路都写成别的，那是整首：server.js 的通用解锁写 JS 的 null，
+        // module/song_url_v1.js 带 unblock=true 时写字符串 'null'。
+        const preview = typeof raw?.freeTrialInfo === 'object' && raw.freeTrialInfo !== null;
+        const trackGain = toFiniteNumber(raw?.gain);
+        return {
+            url: String(rawUrl).replace(/^http:/, 'https:'),
+            quality,
+            ...(preview ? { preview } : {}),
+            ...(trackGain === undefined ? {} : { replayGain: { trackGain } }),
+        };
+    };
+    // iOS 版（页面里有 App 的原生播放器）：歌交给原生播放器放，切到后台、锁屏照样放（neteaseNativePlayback.ts）。
+    // 桌面和网页版没有它，照旧经 playback.audio@1 拿地址给页面的播放器。
+    const nativePlayback = hasNeteaseNativePlayer()
+        ? createNeteaseNativePlayback(async (song, quality) => (await readAudioSource(song, quality)).url)
+        : null;
+
     return {
         id: 'netease',
         displayName: neteaseTextKey('name.lyrics'),
         shortName: neteaseTextKey('name.short'),
         mark: { letter: '云', color: '#dc2626' },
         describeFailure: describeNeteaseFailure,
+        ...(nativePlayback ? { routeOf: () => 'external' as const } : {}),
         capabilities: {
             'search@1': {
                 async searchSongs(query, limit, offset) {
@@ -556,26 +584,9 @@ export const createNeteaseSource = (): FoliumSourceDef => {
                 },
             },
             'playback.audio@1': {
-                async getAudioSource(song, quality) {
-                    const response = await neteaseApi.getSongUrl(toNeteaseId(song.id), mapQuality(quality));
-                    if (isRefusedNeteaseAnswer(response)) throw neteaseAnswerError(response, 'the song URL');
-                    const raw = response?.data?.[0];
-                    const rawUrl = raw?.url;
-                    if (!rawUrl) throw neteaseNoUrlError(raw?.code, raw?.fee);
-                    // 这个账号只能听一段试听（会员歌曲）：网易云给的是那一段的地址，freeTrialInfo 里是它在整首里的起止。
-                    // 地址照给，标成试听：播放照放并提示，缓存不收它。
-                    // 只认一个对象。上游的两条解锁路都写成别的，那是整首：server.js 的通用解锁写 JS 的 null，
-                    // module/song_url_v1.js 带 unblock=true 时写字符串 'null'。
-                    const preview = typeof raw?.freeTrialInfo === 'object' && raw.freeTrialInfo !== null;
-                    const trackGain = toFiniteNumber(raw?.gain);
-                    return {
-                        url: String(rawUrl).replace(/^http:/, 'https:'),
-                        quality,
-                        ...(preview ? { preview } : {}),
-                        ...(trackGain === undefined ? {} : { replayGain: { trackGain } }),
-                    };
-                },
+                getAudioSource: readAudioSource,
             },
+            ...(nativePlayback ? { 'playback.external@1': nativePlayback } : {}),
             'reports@1': {
                 // Cloud-disk tracks are excluded outright: an unmatched upload carries a cloud id that names
                 // no track in the catalogue, and reporting one is reporting a play of a song that does not

@@ -64,7 +64,7 @@ const fetchTransport: Transport = async (request) => {
     const response = await fetch(request.url, {
         method: request.method,
         headers: request.headers,
-        body: request.body,
+        body: request.body as string | Uint8Array<ArrayBuffer> | undefined,
         redirect: 'follow',
         ...(request.timeoutMs ? { signal: AbortSignal.timeout(request.timeoutMs) } : {}),
     });

@@ -61,7 +61,7 @@ const neteaseShims = (): Plugin => ({
 export default defineConfig({
     root,
     publicDir: false,
-    envFile: false,
+    envDir: false,
     plugins: [neteaseShims()],
     define: {
         'process.env.NODE_ENV': JSON.stringify('production'),

@@ -19,6 +19,10 @@ Folia 内置的网易云音乐音源模组（Folium 2.0）。原来是 `src/serv
     `core/neteaseLoginDiagnostics.ts` 排，自检在 `core/neteaseSelfCheck.ts`。
 - **网页版怎么用**：网页版不加载模组，`src/services/onlineMusic/web/netease.ts` 用 `core/` 的 `createSource` 自己注册
   （`src/services/onlineMusic/web/foliumWebSource.ts`），请求发到 `VITE_NETEASE_API_BASE`；没配置时请求报「未配置」。
+- **iOS 版怎么放歌**：页面里有 `window.FoliaNativePlayer`（`ios/native-player/bridge.js`）时，音源多一个 `playback.external@1`
+  （`core/neteaseNativePlayback.ts`），`routeOf` 答 `external`：歌交给 App 的原生播放器（`ios/App/App/NativePlayerPlugin.swift`），
+  宿主跟着它的时钟走。地址和 `playback.audio@1` 是同一个请求，音质取宿主存的 `default_audio_quality`。播放器会自己接上准备好的下一首，
+  宿主再问上一首时答「放完了」，起播时先认领（`adopt`）正在放的那首。别的平台没有这条路。
 - **我们改了什么**（都在 `main/`）：
   - 加载前替换包内部的 `util/request` 导出（`withoutImplicitClientIp`）：只有显式要求随机国内 IP 的请求才带伪造的来源 IP，其余请求
     不写 `X-Real-IP` / `X-Forwarded-For`。原因写在 `neteaseApiStartup.cjs`：上游默认的写法会让扫码确认失败。Docker 镜像用

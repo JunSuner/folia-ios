@@ -4,7 +4,7 @@
 // - 按路径找到包里 module/ 下对应的文件，把查询参数（含 cookie）交给它，用上游的 util/request 发请求；
 // - 启动时准备 cnIp、deviceId、xeapi 公钥和匿名 token（桌面端 neteaseApiWorker.cjs 的顺序）；
 // - Folia 对上游的修改：只有 randomCNIP 的请求才带伪造的来源 IP；扫码两步网络失败时重发一次；替换 login_qr_check。
-import ncmGlobal from './shims/global.cjs';
+import ncmGlobalShared from './shims/global.cjs';
 import { existsSync, readFileSync, writeFileSync } from './shims/fs';
 
 type Cookie = Record<string, string>;
@@ -13,6 +13,9 @@ interface Answer { status: number; body: unknown; cookie?: string[] }
 type NcmRequest = (uri: string, data: Record<string, unknown>, options?: Record<string, unknown>) => Promise<Answer>;
 type NcmModule = (query: Query, request: NcmRequest) => Promise<Answer>;
 type Loader = () => Promise<{ default: unknown }>;
+
+/** 上游包里各文件共用的 global（shims/global.cjs）：上游 server.js 启动时往上写的两项。 */
+const ncmGlobal = ncmGlobalShared as { cnIp?: string; deviceId?: string };
 
 const TOKEN_FILE = '/tmp/anonymous_token';
 const XEAPI_KEY_FILE = '/tmp/xeapi_public_key';
@@ -223,7 +226,7 @@ const ensureStarted = () => {
 const json = (status: number, body: unknown) => {
     const safeStatus = status >= 200 && status <= 599 ? status : 500;
     if (typeof body === 'string') return new Response(body, { status: safeStatus, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
-    if (body instanceof Uint8Array) return new Response(body, { status: safeStatus });
+    if (body instanceof Uint8Array) return new Response(body as Uint8Array<ArrayBuffer>, { status: safeStatus });
     return new Response(JSON.stringify(body ?? null), { status: safeStatus, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 };
 

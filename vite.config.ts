@@ -278,13 +278,24 @@ export default async function viteConfig(_config: ConfigEnv): Promise<UserConfig
       },
     },
     plugins: [
-      // iOS（Capacitor）构建：页面最前面加载手机内置网易云服务的拦截脚本（ios/netease-local/bootstrap.js，
-      // 由 ios/netease-local/vite.config.ts 构建到 dist/netease-local/，npm run build:ios 里在这一步之后）。
+      // iOS（Capacitor）构建：页面最前面加载两段普通脚本。手机内置网易云服务的拦截脚本（ios/netease-local/bootstrap.js，
+      // 由 ios/netease-local/vite.config.ts 构建到 dist/netease-local/，npm run build:ios 里在这一步之后），和原生播放器的
+      // 接口（ios/native-player/bridge.js，这里原样放进 dist/native-player/）。
       isCapacitorBuild && {
-        name: 'folia-ios-netease-local',
+        name: 'folia-ios-shell',
         transformIndexHtml: {
           order: 'post' as const,
-          handler: () => [{ tag: 'script', attrs: { src: '/netease-local/bootstrap.js' }, injectTo: 'head-prepend' as const }],
+          handler: () => [
+            { tag: 'script', attrs: { src: '/netease-local/bootstrap.js' }, injectTo: 'head-prepend' as const },
+            { tag: 'script', attrs: { src: '/native-player/bridge.js' }, injectTo: 'head-prepend' as const },
+          ],
+        },
+        generateBundle() {
+          this.emitFile({
+            type: 'asset',
+            fileName: 'native-player/bridge.js',
+            source: fs.readFileSync(path.resolve(__dirname, 'ios/native-player/bridge.js'), 'utf8'),
+          });
         },
       },
       devLyricProxyPlugin(),

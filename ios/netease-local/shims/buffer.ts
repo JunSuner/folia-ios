@@ -13,7 +13,7 @@ Buffer.prototype.toString = function toString(this: Buffer, encoding?: string, s
 const originalFrom = Buffer.from;
 Buffer.from = function from(this: typeof Buffer, value: unknown, encoding?: unknown, length?: unknown) {
     if (encoding === 'base64url' && typeof value === 'string') {
-        return originalFrom.call(this, value.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+        return (originalFrom as (...args: unknown[]) => Buffer).call(this, value.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
     }
     return (originalFrom as (...args: unknown[]) => Buffer).call(this, value, encoding, length);
 } as typeof Buffer.from;
