@@ -115,3 +115,5 @@ public/nebbia-strokes.json
 .workbuddy/
 # iOS 壳的本地后端地址（每人自己的网易云 API）
 .env.capacitor
+ios/perf/.build
+ios/perf/results

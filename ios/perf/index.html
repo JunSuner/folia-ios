@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Folia 性能测试</title>
+    <style>
+      html, body { margin: 0; background: #09090b; color: #e4e4e7; font: 15px/1.5 -apple-system, system-ui, sans-serif; }
+      main { padding: calc(env(safe-area-inset-top) + 24px) 20px 40px; }
+      h1 { font-size: 22px; margin: 0 0 8px; }
+      p { color: #a1a1aa; margin: 0 0 16px; }
+      button { font: inherit; font-weight: 600; padding: 12px 20px; border-radius: 12px; border: 0; background: #fafafa; color: #09090b; }
+      table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; font-variant-numeric: tabular-nums; }
+      th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #27272a; }
+      th { color: #a1a1aa; font-weight: 500; }
+      .bad { color: #f87171; } .mid { color: #fbbf24; } .good { color: #4ade80; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Folia 性能测试</h1>
+      <p id="status">逐个播放 18 种歌词样式，每种测 2 段 8 秒。测试前请把"自动锁定"设为"永不"，连着电源平放，测完前别切出 App。</p>
+      <button id="start">开始测试</button>
+      <table id="results" hidden><thead><tr><th>样式</th><th>帧率</th><th>p95 帧间隔</th><th>掉帧</th><th>最长卡顿</th></tr></thead><tbody></tbody></table>
+    </main>
+    <script type="module" src="/ios/perf/indexDriver.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+// 真机性能测试版：另一个 Bundle ID，跟日常用的 Folia 数据分开；签名团队沿用 local.xcconfig
+#include? "../App/local.xcconfig"
+PRODUCT_BUNDLE_IDENTIFIER = dev.folia.ios.perf
+FOLIA_DISPLAY_NAME = Folia 测速
